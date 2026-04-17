@@ -1,4 +1,32 @@
+# Go build output
 bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go test binary
+*.test
+
+# Go coverage
+*.out
+*.prof
+
+# Vendor (if not committed)
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# Project secrets and local config
 .env
 secrets/localhost.env
 config/localhost.yaml

@@ -1,0 +1,4 @@
+addr: "127.0.0.1:18084"
+base_url: "https://meet.lobb.ie"
+vpaas_id: "vpaas-magic-cookie-60ce25dcc116492f9b6876781c9ec159"
+default_room: "lobby"

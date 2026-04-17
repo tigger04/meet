@@ -21,9 +21,10 @@ import (
 var Version = "dev"
 
 type appConfig struct {
-	Addr    string `yaml:"addr"`
-	BaseURL string `yaml:"base_url"`
-	VpaasID string `yaml:"vpaas_id"`
+	Addr        string `yaml:"addr"`
+	BaseURL     string `yaml:"base_url"`
+	VpaasID     string `yaml:"vpaas_id"`
+	DefaultRoom string `yaml:"default_room"`
 }
 
 func main() {
@@ -46,10 +47,11 @@ func main() {
 
 	addr := resolveListenAddr(cfg)
 	srv := server.New(server.Config{
-		Addr:    addr,
-		BaseURL: cfg.BaseURL,
-		VpaasID: cfg.VpaasID,
-		Logger:  logger,
+		Addr:        addr,
+		BaseURL:     cfg.BaseURL,
+		VpaasID:     cfg.VpaasID,
+		DefaultRoom: cfg.DefaultRoom,
+		Logger:      logger,
 	})
 
 	logger.Info("meet starting", "version", Version, "addr", addr, "base_url", cfg.BaseURL)
@@ -75,8 +77,8 @@ func main() {
 
 func loadConfig(logger *slog.Logger) appConfig {
 	cfg := appConfig{
-		Addr:    "127.0.0.1:18082",
-		BaseURL: "https://meet.lobb.ie",
+		Addr:        "127.0.0.1:18082",
+		DefaultRoom: "lobby",
 	}
 
 	if data, err := os.ReadFile("config/defaults.yaml"); err == nil {

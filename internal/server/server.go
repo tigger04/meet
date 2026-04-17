@@ -22,10 +22,11 @@ var indexHTML string
 
 // Config holds the server configuration.
 type Config struct {
-	Addr    string
-	BaseURL string
-	VpaasID string
-	Logger  *slog.Logger
+	Addr        string
+	BaseURL     string
+	VpaasID     string
+	DefaultRoom string
+	Logger      *slog.Logger
 }
 
 // Server wraps net/http.Server with meet-specific routing.
@@ -72,6 +73,11 @@ func New(cfg Config) *Server {
 	return s
 }
 
+// Handler returns the server's HTTP handler for use in tests.
+func (s *Server) Handler() http.Handler {
+	return s.http.Handler
+}
+
 // ListenAndServe starts the HTTP server.
 func (s *Server) ListenAndServe() error {
 	return s.http.ListenAndServe()
@@ -92,8 +98,7 @@ func (s *Server) handleRoom(w http.ResponseWriter, r *http.Request) {
 	path = strings.TrimSuffix(path, "/")
 
 	if path == "" {
-		http.Error(w, "Room name required. Use: /your-room-name", http.StatusBadRequest)
-		return
+		path = s.cfg.DefaultRoom
 	}
 
 	// Reject paths with slashes (only single-segment room names).

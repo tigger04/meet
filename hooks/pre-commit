@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Chain to global hook first — project hooks must not override global hooks
+if global_hooks_path="$(git config --global core.hooksPath 2>/dev/null)"; then
+    if [[ -x "$global_hooks_path/${0##*/}" ]]; then
+        "$global_hooks_path/${0##*/}"
+    fi
+fi
+
+# Project-specific checks below
+make lint
