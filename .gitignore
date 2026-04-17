@@ -1,0 +1,4 @@
+bin/
+.env
+secrets/localhost.env
+config/localhost.yaml
