@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{.RoomName}} — {{.DomainFull}}</title>
+    <style>
+        @font-face {
+            font-family: 'Special Elite';
+            src: url('/static/SpecialElite-Regular.woff2') format('woff2');
+            font-display: swap;
+        }
+
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            background: #000;
+            font-family: sans-serif;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .banner {
+            background: #1a3a5c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 1rem;
+            flex-shrink: 0;
+        }
+
+        .banner a {
+            font-family: 'Special Elite', serif;
+            font-size: 2rem;
+            text-decoration: none;
+            line-height: 1;
+        }
+
+        .banner .domain-highlight {
+            color: #f0f0f0;
+        }
+
+        .banner .domain-dim {
+            color: #8a9bae;
+        }
+
+        #jaas-container {
+            flex: 1;
+            min-height: 0;
+        }
+    </style>
+    <script src='https://8x8.vc/{{.VpaasID}}/external_api.js' async></script>
+    <script>
+        window.onload = () => {
+            const api = new JitsiMeetExternalAPI("8x8.vc", {
+                roomName: "{{.VpaasID}}/{{.RoomName}}",
+                parentNode: document.querySelector('#jaas-container')
+            });
+        };
+    </script>
+</head>
+<body>
+    <div class="banner">
+        <a href="/">
+            <span class="domain-highlight">{{.DomainFirst}}</span><span class="domain-dim">{{.DomainRest}}</span>
+        </a>
+    </div>
+    <div id="jaas-container"></div>
+</body>
+</html>

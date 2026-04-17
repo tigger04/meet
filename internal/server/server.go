@@ -1,0 +1,141 @@
+// ABOUTME: HTTP server for meet. Serves the branded 8x8 JaaS page with
+// ABOUTME: room name derived from the URL path, plus static assets.
+
+package server
+
+import (
+	"context"
+	"embed"
+	"html/template"
+	"io/fs"
+	"log/slog"
+	"net/http"
+	"net/url"
+	"strings"
+)
+
+//go:embed all:static
+var staticFS embed.FS
+
+//go:embed static/index.html
+var indexHTML string
+
+// Config holds the server configuration.
+type Config struct {
+	Addr    string
+	BaseURL string
+	VpaasID string
+	Logger  *slog.Logger
+}
+
+// Server wraps net/http.Server with meet-specific routing.
+type Server struct {
+	http   *http.Server
+	cfg    Config
+	tmpl   *template.Template
+	logger *slog.Logger
+}
+
+type pageData struct {
+	VpaasID        string
+	RoomName       string
+	DomainFull     string
+	DomainFirst    string
+	DomainRest     string
+}
+
+// New creates a configured Server ready to listen.
+func New(cfg Config) *Server {
+	tmpl := template.Must(template.New("index").Parse(indexHTML))
+
+	s := &Server{
+		cfg:    cfg,
+		tmpl:   tmpl,
+		logger: cfg.Logger,
+	}
+
+	mux := http.NewServeMux()
+
+	sub, err := fs.Sub(staticFS, "static")
+	if err != nil {
+		cfg.Logger.Error("failed to create static sub-filesystem", "error", err)
+	}
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(sub))))
+	mux.HandleFunc("/health", s.handleHealth)
+	mux.HandleFunc("/", s.handleRoom)
+
+	s.http = &http.Server{
+		Addr:    cfg.Addr,
+		Handler: mux,
+	}
+
+	return s
+}
+
+// ListenAndServe starts the HTTP server.
+func (s *Server) ListenAndServe() error {
+	return s.http.ListenAndServe()
+}
+
+// Shutdown gracefully stops the server.
+func (s *Server) Shutdown(ctx context.Context) error {
+	return s.http.Shutdown(ctx)
+}
+
+func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
+}
+
+func (s *Server) handleRoom(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/")
+	path = strings.TrimSuffix(path, "/")
+
+	if path == "" {
+		http.Error(w, "Room name required. Use: /your-room-name", http.StatusBadRequest)
+		return
+	}
+
+	// Reject paths with slashes (only single-segment room names).
+	if strings.Contains(path, "/") {
+		http.Error(w, "Invalid room name", http.StatusBadRequest)
+		return
+	}
+
+	domainFull, domainFirst, domainRest := parseDomain(s.cfg.BaseURL)
+
+	data := pageData{
+		VpaasID:     s.cfg.VpaasID,
+		RoomName:    path,
+		DomainFull:  domainFull,
+		DomainFirst: domainFirst,
+		DomainRest:  domainRest,
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := s.tmpl.Execute(w, data); err != nil {
+		s.logger.Error("template render failed", "error", err)
+	}
+}
+
+// parseDomain extracts the domain from a URL and splits it into the first
+// label (bright) and the rest (dim). E.g. "https://meet.lobb.ie" yields
+// ("meet.lobb.ie", "meet", ".lobb.ie").
+func parseDomain(baseURL string) (full, first, rest string) {
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return baseURL, baseURL, ""
+	}
+
+	host := u.Hostname()
+	full = host
+
+	dot := strings.Index(host, ".")
+	if dot < 0 {
+		return host, host, ""
+	}
+
+	first = host[:dot]
+	rest = host[dot:]
+	return full, first, rest
+}
