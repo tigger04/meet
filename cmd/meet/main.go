@@ -163,6 +163,9 @@ func runToken(args []string) {
 				"name":      *nameFlag,
 				"moderator": "true",
 			},
+			"features": map[string]interface{}{
+				"recording": true,
+			},
 		},
 	}
 
