@@ -1,4 +1,8 @@
-# Local dev overrides. Copy to localhost.yaml and customise.
-# addr: "127.0.0.1:18082"
-# base_url: "http://localhost:18082"
-# vpaas_id: "vpaas-magic-cookie-your-id-here"
+sanitize: defaulting to oed + symbols
+# Local dev overrides. Copy to localhost.yaml and customize.
+# addr: "127.0.0.1:18085"
+# base_url: "http://localhost:18085"
+#
+# Secrets (app-id, key-id, private-key) belong in secrets/localhost.yaml,
+# not here. See README.md for the expected structure.
+1 -ize correction
