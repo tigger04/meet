@@ -14,7 +14,8 @@ build:
 	@echo "==> building $(APP) for $$(go env GOOS)/$$(go env GOARCH)"
 	@mkdir -p $(dir $(BUILD_OUTPUT))
 	go build -o $(BUILD_OUTPUT) $(MAIN_PKG)
-	@ls -la $(BUILD_OUTPUT)
+	go build -o ./bin/remote-token ./cmd/remote-token
+	@ls -la $(BUILD_OUTPUT) ./bin/remote-token
 
 test: lint
 	@echo "==> running regression tests"
@@ -40,12 +41,17 @@ clean:
 
 install: build
 	ln -sfn $(CURDIR)/$(BUILD_OUTPUT) $(HOME)/.local/bin/$(APP)
+	ln -sfn $(CURDIR)/bin/remote-token $(HOME)/.local/bin/meet-token
 
 uninstall:
 	rm -f $(HOME)/.local/bin/$(APP)
+	rm -f $(HOME)/.local/bin/meet-token
 
 serve: build
 	$(BUILD_OUTPUT) --config $(CONFIG)
+
+token: build
+	$(BUILD_OUTPUT) token --config $(CONFIG) --room $(ROOM)
 
 init:
 	@if [ ! -f config/localhost.yaml ]; then \

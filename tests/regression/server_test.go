@@ -18,11 +18,9 @@ import (
 func newTestServer() *httptest.Server {
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 	srv := server.New(server.Config{
-		Addr:    "127.0.0.1:0",
-		BaseURL: "https://meet.lobb.ie",
-		Keys8x8: server.Keys8x8{
-			AppID: "vpaas-magic-cookie-test",
-		},
+		Addr:        "127.0.0.1:0",
+		BaseURL:     "https://meet.lobb.ie",
+		AppID:       "vpaas-magic-cookie-test",
 		DefaultRoom: "lobby",
 		Logger:      logger,
 	})
