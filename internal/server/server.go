@@ -20,11 +20,18 @@ var staticFS embed.FS
 //go:embed static/index.html
 var indexHTML string
 
+// Keys8x8 holds 8x8 JaaS credentials.
+type Keys8x8 struct {
+	AppID      string
+	PrivateKey string
+	PublicKey  string
+}
+
 // Config holds the server configuration.
 type Config struct {
 	Addr        string
 	BaseURL     string
-	VpaasID     string
+	Keys8x8     Keys8x8
 	DefaultRoom string
 	Logger      *slog.Logger
 }
@@ -38,7 +45,7 @@ type Server struct {
 }
 
 type pageData struct {
-	VpaasID        string
+	AppID        string
 	RoomName       string
 	DomainFull     string
 	DomainFirst    string
@@ -110,7 +117,7 @@ func (s *Server) handleRoom(w http.ResponseWriter, r *http.Request) {
 	domainFull, domainFirst, domainRest := parseDomain(s.cfg.BaseURL)
 
 	data := pageData{
-		VpaasID:     s.cfg.VpaasID,
+		AppID:     s.cfg.Keys8x8.AppID,
 		RoomName:    path,
 		DomainFull:  domainFull,
 		DomainFirst: domainFirst,

@@ -57,11 +57,11 @@
             min-height: 0;
         }
     </style>
-    <script src='https://8x8.vc/{{.VpaasID}}/external_api.js' async></script>
+    <script src='https://8x8.vc/{{.AppID}}/external_api.js' async></script>
     <script>
         window.onload = () => {
             const api = new JitsiMeetExternalAPI("8x8.vc", {
-                roomName: "{{.VpaasID}}/{{.RoomName}}",
+                roomName: "{{.AppID}}/{{.RoomName}}",
                 parentNode: document.querySelector('#jaas-container')
             });
         };

@@ -29,4 +29,5 @@ vendor/
 # Project secrets and local config
 .env
 secrets/localhost.env
+secrets/localhost.yaml
 config/localhost.yaml

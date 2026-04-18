@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -21,14 +22,21 @@ import (
 var Version = "dev"
 
 type appConfig struct {
-	Addr        string `yaml:"addr"`
-	BaseURL     string `yaml:"base_url"`
-	VpaasID     string `yaml:"vpaas_id"`
-	DefaultRoom string `yaml:"default_room"`
+	Addr        string    `yaml:"addr"`
+	BaseURL     string    `yaml:"base_url"`
+	DefaultRoom string    `yaml:"default_room"`
+	Keys8x8     keys8x8   `yaml:"8x8-keys"`
+}
+
+type keys8x8 struct {
+	AppID      string `yaml:"app-id"`
+	PrivateKey string `yaml:"private-key"`
+	PublicKey  string `yaml:"public-key"`
 }
 
 func main() {
 	versionFlag := flag.Bool("version", false, "print version and exit")
+	configFlag := flag.String("config", "config/defaults.yaml", "comma-separated config files, merged left-to-right")
 	flag.Parse()
 
 	if *versionFlag {
@@ -38,23 +46,26 @@ func main() {
 
 	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
 
-	cfg := loadConfig(logger)
+	cfg := loadConfig(*configFlag, logger)
 
-	if cfg.VpaasID == "" || cfg.VpaasID == "CHANGE_ME" {
-		logger.Error("vpaas_id not configured — set it in your config YAML")
+	if cfg.Keys8x8.AppID == "" {
+		logger.Error("app_id not configured — add it to a secrets YAML file")
 		os.Exit(1)
 	}
 
-	addr := resolveListenAddr(cfg)
 	srv := server.New(server.Config{
-		Addr:        addr,
-		BaseURL:     cfg.BaseURL,
-		VpaasID:     cfg.VpaasID,
+		Addr:    cfg.Addr,
+		BaseURL: cfg.BaseURL,
+		Keys8x8: server.Keys8x8{
+			AppID:      cfg.Keys8x8.AppID,
+			PrivateKey: cfg.Keys8x8.PrivateKey,
+			PublicKey:  cfg.Keys8x8.PublicKey,
+		},
 		DefaultRoom: cfg.DefaultRoom,
 		Logger:      logger,
 	})
 
-	logger.Info("meet starting", "version", Version, "addr", addr, "base_url", cfg.BaseURL)
+	logger.Info("meet starting", "version", Version, "addr", cfg.Addr, "base_url", cfg.BaseURL)
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
@@ -75,32 +86,32 @@ func main() {
 	}
 }
 
-func loadConfig(logger *slog.Logger) appConfig {
+func loadConfig(paths string, logger *slog.Logger) appConfig {
 	cfg := appConfig{
 		Addr:        "127.0.0.1:18082",
 		DefaultRoom: "lobby",
 	}
 
-	if data, err := os.ReadFile("config/defaults.yaml"); err == nil {
-		if err := yaml.Unmarshal(data, &cfg); err != nil {
-			logger.Warn("config: failed to parse defaults.yaml", "error", err)
+	for _, p := range strings.Split(paths, ",") {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
 		}
-	}
-
-	if configPath := os.Getenv("CONFIG_PATH"); configPath != "" {
-		if data, err := os.ReadFile(configPath); err == nil {
-			if err := yaml.Unmarshal(data, &cfg); err != nil {
-				logger.Warn("config: failed to parse host config", "path", configPath, "error", err)
+		data, err := os.ReadFile(p)
+		if err != nil {
+			if os.IsNotExist(err) {
+				logger.Info("config: file not found, skipping", "path", p)
+				continue
 			}
+			logger.Error("config: read error", "path", p, "error", err)
+			os.Exit(1)
 		}
+		if err := yaml.Unmarshal(data, &cfg); err != nil {
+			logger.Error("config: parse error", "path", p, "error", err)
+			os.Exit(1)
+		}
+		logger.Info("config: loaded", "path", p)
 	}
 
 	return cfg
-}
-
-func resolveListenAddr(cfg appConfig) string {
-	if a := os.Getenv("ADDR"); a != "" {
-		return a
-	}
-	return cfg.Addr
 }

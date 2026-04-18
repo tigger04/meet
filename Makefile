@@ -6,6 +6,7 @@
 APP          := meet
 MAIN_PKG     := ./cmd/meet
 BUILD_OUTPUT := ./bin/$(APP)
+CONFIG       := config/defaults.yaml,config/localhost.yaml,secrets/localhost.yaml
 
 .PHONY: build test test-one-off lint clean install uninstall init serve sync release
 
@@ -44,7 +45,7 @@ uninstall:
 	rm -f $(HOME)/.local/bin/$(APP)
 
 serve: build
-	CONFIG_PATH=config/localhost.yaml $(BUILD_OUTPUT)
+	$(BUILD_OUTPUT) --config $(CONFIG)
 
 init:
 	@if [ ! -f config/localhost.yaml ]; then \
@@ -68,7 +69,7 @@ init:
 
 sync:
 	git add --all
-	git commit || true
+	git commit -m "sync: $$(date -u +%Y-%m-%dT%H:%M:%SZ)" || true
 	git pull
 	git push
 
