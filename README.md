@@ -1,4 +1,3 @@
-sanitize: defaulting to oed + symbols
 # meet
 
 Branded 8x8 JaaS (Jitsi as a Service) meeting page. A lightweight Go web app

@@ -1,5 +1,4 @@
-sanitize: defaulting to oed + symbols
-<!-- Version: 0.1 | Last updated: 2026-04-18 -->
+<!-- Version: 0.2 | Last updated: 2026-04-18 -->
 
 # 8x8 JaaS Embed Reference
 
@@ -42,7 +41,22 @@ Post-construction behaviour is controlled via `addEventListener` and
 
 ## JWT Structure
 
-See `docs/jwt.md` (if created) or the 8x8 developer portal at
+The moderator JWT includes:
+
+- `context.user.moderator: "true"` - grants moderator privileges
+- `context.features.recording: true` - enables recording capability
+
+See the 8x8 developer portal at
 `developer.8x8.com/jaas/docs/api-keys-jwt` for the full JWT claim structure.
-1 -ize correction
-4 symbol replacements
+
+## Recordings
+
+Recording is enabled via the `features.recording` flag in the moderator JWT.
+After a session ends, 8x8 delivers the recording via webhooks:
+
+1. `RECORDING_ENDED` - signals recording stopped (no download URL)
+2. `RECORDING_UPLOADED` - contains `preAuthenticatedLink` (valid 24 hours)
+
+Automated download is tracked in [#1](https://github.com/tigger04/meet/issues/1).
+
+See `developer.8x8.com/jaas/docs/webhooks-payload/` for payload details.
