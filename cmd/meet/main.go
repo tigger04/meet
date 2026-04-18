@@ -5,6 +5,9 @@ package main
 
 import (
 	"context"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -30,6 +33,7 @@ type appConfig struct {
 
 type keys8x8 struct {
 	AppID      string `yaml:"app-id"`
+	KeyID      string `yaml:"key-id"`
 	PrivateKey string `yaml:"private-key"`
 	PublicKey  string `yaml:"public-key"`
 }
