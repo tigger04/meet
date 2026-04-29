@@ -1,8 +1,40 @@
-sanitize: defaulting to oed + symbols
-# Local dev overrides. Copy to localhost.yaml and customize.
+# Local dev overrides. Copy to localhost.yaml and customise.
 # addr: "127.0.0.1:18085"
 # base_url: "http://localhost:18085"
 #
-# Secrets (app-id, key-id, private-key) belong in secrets/localhost.yaml,
-# not here. See README.md for the expected structure.
-1 -ize correction
+# Override the default WebDAV destination folder:
+# recording:
+#   webdav-path: "meeting-recordings"
+#
+# Secrets belong in secrets/<host>.yaml.age, not here.
+# Encrypted with age (https://age-encryption.org) to two recipients:
+#   - The operator's SSH key (~/.ssh/id_ed25519)
+#   - The deploy host's SSH key (registered as a GitHub deploy key)
+#
+# To encrypt:
+#   age -e -R ~/.ssh/id_ed25519.pub -R <host-ssh-key>.pub \
+#     -o secrets/<host>.yaml.age secrets/<host>.yaml
+#
+# To decrypt:
+#   age -d -i ~/.ssh/id_ed25519 secrets/<host>.yaml.age > secrets/<host>.yaml
+#
+# For local dev, secrets/localhost.yaml (unencrypted, gitignored) is
+# acceptable — no .age encryption needed.
+#
+# Required secrets structure:
+#
+#   8x8-keys:
+#     app-id: "vpaas-magic-cookie-..."
+#     key-id: "vpaas-magic-cookie-.../abcdef"
+#     private-key: |
+#       -----BEGIN PRIVATE KEY-----
+#       ...
+#     public-key: |
+#       -----BEGIN PUBLIC KEY-----
+#       ...
+#
+#   recording:
+#     webdav-url: "https://nextcloud.example/remote.php/dav/files/user"
+#     webdav-user: "user"
+#     webdav-password: "app-password"
+#     webhook-token: "bearer-token-from-8x8-console"

@@ -1,1 +1,3 @@
 base_url: "https://meet.lobb.ie"
+recording:
+    webdav-path: meeting-recordings

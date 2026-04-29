@@ -1,3 +1,5 @@
-addr: "127.0.0.1:18085"
-base_url: "https://meet.lobb.ie"
-default_room: "lobby"
+addr: 127.0.0.1:18085
+base_url: http://localhost:18085
+default_room: lobby
+recording:
+    webdav-path: meeting-recordings
