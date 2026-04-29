@@ -26,11 +26,12 @@ import (
 var Version = "dev"
 
 type appConfig struct {
-	Addr        string    `yaml:"addr"`
-	BaseURL     string    `yaml:"base_url"`
-	DefaultRoom string    `yaml:"default_room"`
-	Keys8x8     keys8x8   `yaml:"8x8-keys"`
-	Recording   recording `yaml:"recording"`
+	Addr          string    `yaml:"addr"`
+	BaseURL       string    `yaml:"base_url"`
+	DefaultRoom   string    `yaml:"default_room"`
+	ModeratorName string    `yaml:"moderator-name"`
+	Keys8x8       keys8x8   `yaml:"8x8-keys"`
+	Recording     recording `yaml:"recording"`
 }
 
 type recording struct {
@@ -175,7 +176,7 @@ func runToken(args []string) {
 	}
 	configFlag := fs.String("config", "config/defaults.yaml", "comma-separated config files, merged left-to-right")
 	roomFlag := fs.String("room", "", "room name (required)")
-	nameFlag := fs.String("name", "Moderator", "display name in the meeting")
+	nameFlag := fs.String("name", "", "display name in the meeting (default from config or \"Moderator\")")
 	expiryFlag := fs.Duration("expiry", 2*time.Hour, "token validity duration")
 	fs.Parse(args)
 
@@ -186,6 +187,15 @@ func runToken(args []string) {
 
 	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
 	cfg := loadConfig(*configFlag, logger)
+
+	// Resolve display name: CLI flag > config > fallback
+	displayName := *nameFlag
+	if displayName == "" {
+		displayName = cfg.ModeratorName
+	}
+	if displayName == "" {
+		displayName = "Moderator"
+	}
 
 	if cfg.Keys8x8.AppID == "" {
 		fmt.Fprintln(os.Stderr, "error: app-id not configured")
@@ -213,7 +223,7 @@ func runToken(args []string) {
 		"exp":  now.Add(*expiryFlag).Unix(),
 		"context": map[string]interface{}{
 			"user": map[string]interface{}{
-				"name":      *nameFlag,
+				"name":      displayName,
 				"moderator": "true",
 			},
 			"features": map[string]interface{}{
