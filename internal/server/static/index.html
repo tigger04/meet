@@ -52,6 +52,37 @@
             color: #8a9bae;
         }
 
+        .banner-controls {
+            margin-left: auto;
+        }
+
+        .rec-btn {
+            font-family: 'Special Elite', serif;
+            font-size: 0.9rem;
+            background: transparent;
+            border: 1px solid #8a9bae;
+            color: #8a9bae;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            display: none;
+        }
+
+        .rec-btn:hover {
+            border-color: #f0f0f0;
+            color: #f0f0f0;
+        }
+
+        .rec-btn.recording {
+            border-color: #e74c3c;
+            color: #e74c3c;
+        }
+
+        .rec-btn.recording:hover {
+            border-color: #ff6b6b;
+            color: #ff6b6b;
+        }
+
         #jaas-container {
             flex: 1;
             min-height: 0;
@@ -73,6 +104,31 @@
             api.addEventListener('videoConferenceJoined', () => {
                 api.executeCommand('setTileView', true);
             });
+
+            if (jwt) {
+                const recBtn = document.getElementById('rec-btn');
+                let recording = false;
+                recBtn.style.display = 'inline-block';
+
+                recBtn.addEventListener('click', () => {
+                    if (recording) {
+                        api.executeCommand('stopRecording', { mode: 'file' });
+                    } else {
+                        api.executeCommand('startRecording', { mode: 'file' });
+                    }
+                });
+
+                api.addEventListener('recordingStatusChanged', (e) => {
+                    recording = e.on;
+                    if (recording) {
+                        recBtn.textContent = 'Stop Recording';
+                        recBtn.classList.add('recording');
+                    } else {
+                        recBtn.textContent = 'Record';
+                        recBtn.classList.remove('recording');
+                    }
+                });
+            }
         };
     </script>
 </head>
@@ -81,6 +137,9 @@
         <a href="/">
             <span class="domain-highlight">{{.DomainFirst}}</span><span class="domain-dim">{{.DomainRest}}</span>
         </a>
+        <div class="banner-controls">
+            <button id="rec-btn" class="rec-btn">Record</button>
+        </div>
     </div>
     <div id="jaas-container"></div>
 </body>
