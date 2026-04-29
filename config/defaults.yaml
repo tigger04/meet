@@ -3,3 +3,4 @@ base_url: http://localhost:18085
 default_room: lobby
 recording:
     webdav-path: meeting-recordings
+default-moderator-name: Super User
