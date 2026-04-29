@@ -116,11 +116,18 @@ func runServe(args []string) {
 		os.Exit(1)
 	}
 
+	// DataDir: use STATE_DIRECTORY from systemd, or fall back to current directory.
+	dataDir := os.Getenv("STATE_DIRECTORY")
+	if dataDir == "" {
+		dataDir = "."
+	}
+
 	srvCfg := server.Config{
 		Addr:         cfg.Addr,
 		BaseURL:      cfg.BaseURL,
 		AppID:        cfg.Keys8x8.AppID,
 		DefaultRoom:  cfg.DefaultRoom,
+		DataDir:      dataDir,
 		WebhookToken: cfg.Recording.WebhookToken,
 		Logger:       logger,
 	}
@@ -139,14 +146,23 @@ func runServe(args []string) {
 
 	logger.Info("meet starting", "version", Version, "addr", cfg.Addr, "base_url", cfg.BaseURL)
 
+	// Recover any downloads that weren't uploaded before last shutdown.
+	srv.RecoverPendingUploads()
+
+	// Start daily purge of old uploads (>30 days).
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	srv.StartPurgeTicker(ctx)
+
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
 
 	go func() {
 		sig := <-sigCh
 		logger.Info("shutdown signal received", "signal", sig.String())
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
-		defer cancel()
+		cancel() // stop purge ticker
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 25*time.Second)
+		defer shutdownCancel()
 		if err := srv.Shutdown(shutdownCtx); err != nil {
 			logger.Error("shutdown error", "error", err)
 		}

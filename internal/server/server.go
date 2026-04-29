@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 //go:embed all:static
@@ -26,6 +27,7 @@ type Config struct {
 	BaseURL      string
 	AppID        string
 	DefaultRoom  string
+	DataDir      string
 	WebDAV       *WebDAVConfig
 	WebhookToken string
 	Logger       *slog.Logger
@@ -91,6 +93,27 @@ func (s *Server) ListenAndServe() error {
 // Shutdown gracefully stops the server.
 func (s *Server) Shutdown(ctx context.Context) error {
 	return s.http.Shutdown(ctx)
+}
+
+// StartPurgeTicker runs a daily ticker that removes files older than 30 days
+// from the uploaded directory. Cancel the context to stop.
+func (s *Server) StartPurgeTicker(ctx context.Context) {
+	go func() {
+		ticker := time.NewTicker(24 * time.Hour)
+		defer ticker.Stop()
+
+		// Run once on startup.
+		s.PurgeOldUploads(30 * 24 * time.Hour)
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				s.PurgeOldUploads(30 * 24 * time.Hour)
+			}
+		}
+	}()
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {

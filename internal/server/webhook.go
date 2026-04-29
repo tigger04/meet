@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -90,6 +91,31 @@ var downloadEventTypes = map[string]string{
 	"CHAT_UPLOADED":          "chat",
 }
 
+// RecoverPendingUploads scans the download directory on startup for files
+// that were downloaded but not yet uploaded (e.g. after a crash or restart).
+func (s *Server) RecoverPendingUploads() {
+	if s.cfg.WebDAV == nil {
+		return
+	}
+
+	downloadDir := s.downloadDir()
+	entries, err := os.ReadDir(downloadDir)
+	if err != nil {
+		// Directory doesn't exist yet — nothing to recover.
+		return
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		filename := entry.Name()
+		localPath := filepath.Join(downloadDir, filename)
+		s.logger.Info("startup recovery: found pending upload", "filename", filename)
+		go s.uploadWithRetry(localPath, filename)
+	}
+}
+
 func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -162,21 +188,102 @@ func (s *Server) processDownload(room, fileType string, data downloadEventData) 
 
 	logger.Info("downloading file", "url_length", len(data.PreAuthenticatedLink))
 
-	// Download to temp file.
-	tmpFile, err := s.downloadToTemp(data.PreAuthenticatedLink)
+	// Download to the download directory.
+	localPath, err := s.downloadToDir(data.PreAuthenticatedLink, filename)
 	if err != nil {
 		logger.Error("download failed", "error", err)
 		return
 	}
-	defer os.Remove(tmpFile)
 
-	// Upload to WebDAV.
-	if err := s.uploadToWebDAV(tmpFile, filename); err != nil {
-		logger.Error("WebDAV upload failed", "error", err)
+	// Upload with exponential backoff retry.
+	s.uploadWithRetry(localPath, filename)
+}
+
+// uploadWithRetry attempts to upload a file to WebDAV with exponential backoff.
+// On success, moves the file from download/ to uploaded/. On final failure, the
+// file remains in download/ for recovery on next startup.
+func (s *Server) uploadWithRetry(localPath, filename string) {
+	logger := s.logger.With("filename", filename)
+
+	// Retry schedule: 0, 1m, 2m, 4m, 8m, 16m, 32m, 64m, 128m, 256m, 512m, 1024m (capped at 24h total)
+	delay := time.Duration(0)
+	maxDelay := 24 * time.Hour
+	totalWaited := time.Duration(0)
+
+	for {
+		if delay > 0 {
+			logger.Info("retrying WebDAV upload", "delay", delay.String(), "total_waited", totalWaited.String())
+			time.Sleep(delay)
+			totalWaited += delay
+		}
+
+		err := s.uploadToWebDAV(localPath, filename)
+		if err == nil {
+			// Success — move to uploaded directory.
+			uploadedPath := filepath.Join(s.uploadedDir(), filename)
+			if moveErr := os.Rename(localPath, uploadedPath); moveErr != nil {
+				logger.Warn("failed to move to uploaded dir, removing instead", "error", moveErr)
+				os.Remove(localPath)
+			}
+			logger.Info("file uploaded to Nextcloud", "destination", path.Join(s.cfg.WebDAV.Path, filename))
+			return
+		}
+
+		logger.Error("WebDAV upload failed", "error", err, "total_waited", totalWaited.String())
+
+		// Calculate next delay.
+		if delay == 0 {
+			delay = 1 * time.Minute
+		} else {
+			delay = delay * 2
+		}
+
+		if totalWaited+delay > maxDelay {
+			logger.Error("giving up WebDAV upload after retries — file kept in download dir for manual recovery",
+				"path", localPath, "total_waited", totalWaited.String())
+			return
+		}
+	}
+}
+
+// PurgeOldUploads removes files older than maxAge from the uploaded directory.
+func (s *Server) PurgeOldUploads(maxAge time.Duration) {
+	uploadedDir := s.uploadedDir()
+	entries, err := os.ReadDir(uploadedDir)
+	if err != nil {
 		return
 	}
 
-	logger.Info("file uploaded to Nextcloud", "destination", path.Join(s.cfg.WebDAV.Path, filename))
+	cutoff := time.Now().Add(-maxAge)
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		info, err := entry.Info()
+		if err != nil {
+			continue
+		}
+		if info.ModTime().Before(cutoff) {
+			path := filepath.Join(uploadedDir, entry.Name())
+			if err := os.Remove(path); err != nil {
+				s.logger.Warn("failed to purge old upload", "path", path, "error", err)
+			} else {
+				s.logger.Info("purged old upload", "path", path, "age", time.Since(info.ModTime()).String())
+			}
+		}
+	}
+}
+
+func (s *Server) downloadDir() string {
+	dir := filepath.Join(s.cfg.DataDir, "download")
+	os.MkdirAll(dir, 0o750)
+	return dir
+}
+
+func (s *Server) uploadedDir() string {
+	dir := filepath.Join(s.cfg.DataDir, "uploaded")
+	os.MkdirAll(dir, 0o750)
+	return dir
 }
 
 func buildFilename(room, fileType string, data downloadEventData) string {
@@ -206,7 +313,6 @@ func buildFilename(room, fileType string, data downloadEventData) string {
 
 // extensionFromURL extracts the file extension from a URL path, or returns the fallback.
 func extensionFromURL(rawURL, fallback string) string {
-	// Find the last path segment, strip query params.
 	idx := strings.LastIndex(rawURL, "/")
 	if idx < 0 {
 		return fallback
@@ -232,7 +338,7 @@ func extractRoom(fqn string) string {
 	return fqn
 }
 
-func (s *Server) downloadToTemp(url string) (string, error) {
+func (s *Server) downloadToDir(url, filename string) (string, error) {
 	client := &http.Client{Timeout: 10 * time.Minute}
 	resp, err := client.Get(url)
 	if err != nil {
@@ -244,19 +350,20 @@ func (s *Server) downloadToTemp(url string) (string, error) {
 		return "", fmt.Errorf("GET returned %d", resp.StatusCode)
 	}
 
-	tmp, err := os.CreateTemp("", "meet-recording-*")
+	destPath := filepath.Join(s.downloadDir(), filename)
+	f, err := os.Create(destPath)
 	if err != nil {
-		return "", fmt.Errorf("create temp file: %w", err)
+		return "", fmt.Errorf("create file: %w", err)
 	}
 
-	if _, err := io.Copy(tmp, resp.Body); err != nil {
-		tmp.Close()
-		os.Remove(tmp.Name())
+	if _, err := io.Copy(f, resp.Body); err != nil {
+		f.Close()
+		os.Remove(destPath)
 		return "", fmt.Errorf("download copy: %w", err)
 	}
 
-	tmp.Close()
-	return tmp.Name(), nil
+	f.Close()
+	return destPath, nil
 }
 
 func (s *Server) uploadToWebDAV(localPath, filename string) error {
