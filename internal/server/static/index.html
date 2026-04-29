@@ -11,6 +11,12 @@
             font-display: swap;
         }
 
+        @font-face {
+            font-family: 'Asap';
+            src: url('/static/Asap-Variable.woff2') format('woff2');
+            font-display: swap;
+        }
+
         *, *::before, *::after {
             margin: 0;
             padding: 0;
@@ -58,30 +64,30 @@
         }
 
         .rec-btn {
-            font-family: 'Special Elite', serif;
-            font-size: 0.9rem;
-            background: transparent;
-            border: 1px solid #8a9bae;
-            color: #8a9bae;
+            font-family: 'Asap', sans-serif;
+            font-weight: 700;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: #c0392b;
+            border: none;
+            color: #fff;
             padding: 0.25rem 0.75rem;
-            border-radius: 0.25rem;
+            border-radius: 0.2rem;
             cursor: pointer;
             display: none;
         }
 
         .rec-btn:hover {
-            border-color: #f0f0f0;
-            color: #f0f0f0;
+            background: #e74c3c;
         }
 
         .rec-btn.recording {
-            border-color: #e74c3c;
-            color: #e74c3c;
+            background: #922b21;
         }
 
         .rec-btn.recording:hover {
-            border-color: #ff6b6b;
-            color: #ff6b6b;
+            background: #a93226;
         }
 
         #jaas-container {
@@ -104,13 +110,17 @@
             const api = new JitsiMeetExternalAPI("8x8.vc", opts);
             api.addEventListener('videoConferenceJoined', () => {
                 api.executeCommand('setTileView', true);
+
+                if (jwt) {
+                    const recBtn = document.getElementById('rec-btn');
+                    document.querySelector('.banner-controls').style.display = 'block';
+                    recBtn.style.display = 'inline-block';
+                }
             });
 
             if (jwt) {
                 const recBtn = document.getElementById('rec-btn');
                 let recording = false;
-                document.querySelector('.banner-controls').style.display = 'block';
-                recBtn.style.display = 'inline-block';
 
                 recBtn.addEventListener('click', () => {
                     if (recording) {
@@ -123,10 +133,10 @@
                 api.addEventListener('recordingStatusChanged', (e) => {
                     recording = e.on;
                     if (recording) {
-                        recBtn.textContent = 'Stop Recording';
+                        recBtn.textContent = 'STOP';
                         recBtn.classList.add('recording');
                     } else {
-                        recBtn.textContent = 'Record';
+                        recBtn.textContent = 'REC';
                         recBtn.classList.remove('recording');
                     }
                 });
@@ -140,7 +150,7 @@
             <span class="domain-highlight">{{.DomainFirst}}</span><span class="domain-dim">{{.DomainRest}}</span>
         </a>
         <div class="banner-controls">
-            <button id="rec-btn" class="rec-btn">Record</button>
+            <button id="rec-btn" class="rec-btn">REC</button>
         </div>
     </div>
     <div id="jaas-container"></div>
