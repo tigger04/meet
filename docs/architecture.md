@@ -1,4 +1,4 @@
-<!-- Version: 0.1 | Last updated: 2026-04-29 -->
+<!-- Version: 0.2 | Last updated: 2026-04-30 -->
 
 # Architecture
 
@@ -52,13 +52,17 @@ assets (HTML template, font) and requires no external runtime dependencies.
 ### Webhook (`POST /webhook/recording`)
 
 1. Validate `Authorization` header against configured token
-2. Parse JSON payload, log event metadata
+2. Parse JSON payload, log event metadata (all authenticated events are logged)
 3. For download events (`RECORDING_UPLOADED`, `TRANSCRIPTION_UPLOADED`,
    `CHAT_UPLOADED`):
    - Check idempotency key against dedup map
    - Respond HTTP 200 immediately
-   - Spawn goroutine: download from `preAuthenticatedLink`, upload to
-     Nextcloud via WebDAV PUT
+   - Spawn goroutine for the download/upload pipeline:
+     a. Download file to `{STATE_DIRECTORY}/download/{filename}`
+     b. Upload to Nextcloud via WebDAV PUT
+     c. On success, move file to `{STATE_DIRECTORY}/uploaded/`
+     d. On failure, retry with exponential backoff (1m, 2m, 4m... up to 24h)
+     e. If all retries fail, file remains in `download/` for recovery on restart
 4. For all other events: log and respond HTTP 200
 
 ### Token generation (`meet token`)
@@ -81,10 +85,23 @@ not present in a later file retain their earlier values.
 
 ## State
 
-The server is stateless. The only mutable state is the in-memory dedup map
-(bounded at 1000 entries, evicts oldest). A restart clears it - acceptable
-because webhook redelivery after a restart is harmless (the file already
-exists on Nextcloud, and a duplicate PUT overwrites with identical content).
+The server uses two forms of state:
+
+**In-memory:** the dedup map (bounded at 1000 entries, evicts oldest) prevents
+reprocessing of duplicate webhook deliveries within a single run. A restart
+clears it, but this is safe - a redelivered webhook after restart will
+re-download and re-upload, which is harmless (WebDAV PUT overwrites).
+
+**On-disk:** the `STATE_DIRECTORY` (systemd's `/var/lib/meet/`) contains two
+subdirectories that form a simple state machine:
+
+- `download/` - files downloaded from 8x8 but not yet uploaded to Nextcloud.
+  Presence of a file here means upload is pending or in retry.
+- `uploaded/` - files successfully uploaded. Kept for 30 days as a local
+  backup, then purged by a daily ticker.
+
+On startup, the server scans `download/` and retries any pending uploads.
+This recovers from crashes, restarts, and deployment-induced service restarts.
 
 ## Security
 

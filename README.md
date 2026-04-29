@@ -71,6 +71,7 @@ For local dev, `secrets/localhost.yaml` (unencrypted, gitignored) is acceptable.
 | `addr` | config | Bind address (default `127.0.0.1:18085`) |
 | `base_url` | config | Public URL, used for banner and token URLs |
 | `default_room` | config | Room name when visiting `/` (default `lobby`) |
+| `default-moderator-name` | config | Display name for moderator tokens (default `Moderator`) |
 | `recording.webdav-path` | config | WebDAV destination folder for recordings |
 | `8x8-keys.app-id` | secrets | 8x8 JaaS application ID |
 | `8x8-keys.key-id` | secrets | 8x8 API key ID (used as JWT `kid` header) |
@@ -100,8 +101,10 @@ Moderators see a Record/Stop button in the banner. Recordings use 8x8's
 cloud recording infrastructure. After a meeting ends, 8x8 sends webhook
 events to `POST /webhook/recording`. The server automatically:
 
-- Downloads recordings, transcriptions, and chat logs
-- Uploads them to Nextcloud via WebDAV
+- Downloads recordings, transcriptions, and chat logs to a local staging directory
+- Uploads them to Nextcloud via WebDAV with exponential backoff retry (up to 24h)
+- On success, moves files to an `uploaded/` directory (kept for 30 days as local backup)
+- On failure, files remain in `download/` and are retried on next app startup
 - Names files as `{room}_{date}_{time}_{duration}.mp4` (recordings),
   `{room}_{date}_{time}_transcript.{ext}` (transcriptions),
   `{room}_{date}_{time}_chat.{ext}` (chat logs)
