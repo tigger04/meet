@@ -29,7 +29,7 @@ type appConfig struct {
 	Addr          string    `yaml:"addr"`
 	BaseURL       string    `yaml:"base_url"`
 	DefaultRoom   string    `yaml:"default_room"`
-	ModeratorName string    `yaml:"moderator-name"`
+	DefaultModeratorName string    `yaml:"default-moderator-name"`
 	Keys8x8       keys8x8   `yaml:"8x8-keys"`
 	Recording     recording `yaml:"recording"`
 }
@@ -191,7 +191,7 @@ func runToken(args []string) {
 	// Resolve display name: CLI flag > config > fallback
 	displayName := *nameFlag
 	if displayName == "" {
-		displayName = cfg.ModeratorName
+		displayName = cfg.DefaultModeratorName
 	}
 	if displayName == "" {
 		displayName = "Moderator"
