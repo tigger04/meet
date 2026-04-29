@@ -1,4 +1,4 @@
-<!-- Version: 0.2 | Last updated: 2026-04-18 -->
+<!-- Version: 0.3 | Last updated: 2026-04-29 -->
 
 # 8x8 JaaS Embed Reference
 
@@ -38,6 +38,20 @@ Post-construction behaviour is controlled via `addEventListener` and
 
 - `videoConferenceJoined` - fires when a participant enters the room.
   Used to set tile view on join: `api.executeCommand('setTileView', true)`.
+- `recordingStatusChanged` - fires when recording starts or stops.
+  Used to sync the banner record button state.
+
+## Banner Record Button
+
+Moderators (identified by presence of a JWT query parameter) see a
+Record/Stop button in the banner. The button:
+
+- Calls `api.executeCommand('startRecording', { mode: 'file' })` to start
+- Calls `api.executeCommand('stopRecording', { mode: 'file' })` to stop
+- Listens to `recordingStatusChanged` to stay in sync with the actual
+  recording state (e.g. if stopped via the Jitsi UI instead)
+
+Regular visitors never see the button.
 
 ## JWT Structure
 
@@ -49,14 +63,22 @@ The moderator JWT includes:
 See the 8x8 developer portal at
 `developer.8x8.com/jaas/docs/api-keys-jwt` for the full JWT claim structure.
 
-## Recordings
+## Recordings, Transcriptions, and Chat
 
 Recording is enabled via the `features.recording` flag in the moderator JWT.
-After a session ends, 8x8 delivers the recording via webhooks:
+After a session ends, 8x8 delivers files via webhooks to
+`POST /webhook/recording`:
 
-1. `RECORDING_ENDED` - signals recording stopped (no download URL)
-2. `RECORDING_UPLOADED` - contains `preAuthenticatedLink` (valid 24 hours)
+| Event | Content | Filename pattern |
+|-------|---------|-----------------|
+| `RECORDING_UPLOADED` | Video recording | `{room}_{date}_{time}_{duration}s.mp4` |
+| `TRANSCRIPTION_UPLOADED` | Speaker-attributed transcript | `{room}_{date}_{time}_transcript.{ext}` |
+| `CHAT_UPLOADED` | Meeting chat log | `{room}_{date}_{time}_chat.{ext}` |
 
-Automated download is tracked in [#1](https://github.com/tigger04/meet/issues/1).
+All three carry a `preAuthenticatedLink` valid for 24 hours. The server
+downloads each file and uploads it to Nextcloud via WebDAV automatically.
+
+All authenticated webhook events (any type) are logged via structured JSON
+logging for observability.
 
 See `developer.8x8.com/jaas/docs/webhooks-payload/` for payload details.
