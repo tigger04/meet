@@ -261,7 +261,7 @@ func (s *Server) downloadToTemp(url string) (string, error) {
 
 func (s *Server) uploadToWebDAV(localPath, filename string) error {
 	cfg := s.cfg.WebDAV
-	destDir := cfg.URL + cfg.Path
+	destDir := strings.TrimRight(cfg.URL, "/") + "/" + strings.TrimLeft(cfg.Path, "/")
 	destFile := destDir + "/" + filename
 
 	client := &http.Client{Timeout: 10 * time.Minute}
