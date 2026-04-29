@@ -26,10 +26,19 @@ import (
 var Version = "dev"
 
 type appConfig struct {
-	Addr        string  `yaml:"addr"`
-	BaseURL     string  `yaml:"base_url"`
-	DefaultRoom string  `yaml:"default_room"`
-	Keys8x8     keys8x8 `yaml:"8x8-keys"`
+	Addr        string    `yaml:"addr"`
+	BaseURL     string    `yaml:"base_url"`
+	DefaultRoom string    `yaml:"default_room"`
+	Keys8x8     keys8x8   `yaml:"8x8-keys"`
+	Recording   recording `yaml:"recording"`
+}
+
+type recording struct {
+	WebDAVURL      string `yaml:"webdav-url"`
+	WebDAVPath     string `yaml:"webdav-path"`
+	WebDAVUser     string `yaml:"webdav-user"`
+	WebDAVPassword string `yaml:"webdav-password"`
+	WebhookToken   string `yaml:"webhook-token"`
 }
 
 type keys8x8 struct {
@@ -89,13 +98,26 @@ func runServe(args []string) {
 		os.Exit(1)
 	}
 
-	srv := server.New(server.Config{
-		Addr:        cfg.Addr,
-		BaseURL:     cfg.BaseURL,
-		AppID:       cfg.Keys8x8.AppID,
-		DefaultRoom: cfg.DefaultRoom,
-		Logger:      logger,
-	})
+	srvCfg := server.Config{
+		Addr:         cfg.Addr,
+		BaseURL:      cfg.BaseURL,
+		AppID:        cfg.Keys8x8.AppID,
+		DefaultRoom:  cfg.DefaultRoom,
+		WebhookToken: cfg.Recording.WebhookToken,
+		Logger:       logger,
+	}
+
+	if cfg.Recording.WebDAVURL != "" {
+		srvCfg.WebDAV = &server.WebDAVConfig{
+			URL:      cfg.Recording.WebDAVURL,
+			Path:     cfg.Recording.WebDAVPath,
+			User:     cfg.Recording.WebDAVUser,
+			Password: cfg.Recording.WebDAVPassword,
+		}
+		logger.Info("WebDAV recording storage configured", "path", cfg.Recording.WebDAVPath)
+	}
+
+	srv := server.New(srvCfg)
 
 	logger.Info("meet starting", "version", Version, "addr", cfg.Addr, "base_url", cfg.BaseURL)
 

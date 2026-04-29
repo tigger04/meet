@@ -22,11 +22,13 @@ var indexHTML string
 
 // Config holds the server configuration.
 type Config struct {
-	Addr        string
-	BaseURL     string
-	AppID       string
-	DefaultRoom string
-	Logger      *slog.Logger
+	Addr         string
+	BaseURL      string
+	AppID        string
+	DefaultRoom  string
+	WebDAV       *WebDAVConfig
+	WebhookToken string
+	Logger       *slog.Logger
 }
 
 // Server wraps net/http.Server with meet-specific routing.
@@ -35,6 +37,7 @@ type Server struct {
 	cfg    Config
 	tmpl   *template.Template
 	logger *slog.Logger
+	dedup  *deduplicator
 }
 
 type pageData struct {
@@ -53,6 +56,7 @@ func New(cfg Config) *Server {
 		cfg:    cfg,
 		tmpl:   tmpl,
 		logger: cfg.Logger,
+		dedup:  newDeduplicator(1000),
 	}
 
 	mux := http.NewServeMux()
@@ -63,6 +67,7 @@ func New(cfg Config) *Server {
 	}
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(sub))))
 	mux.HandleFunc("/health", s.handleHealth)
+	mux.HandleFunc("/webhook/recording", s.handleWebhook)
 	mux.HandleFunc("/", s.handleRoom)
 
 	s.http = &http.Server{
