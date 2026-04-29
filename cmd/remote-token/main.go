@@ -22,9 +22,17 @@ func main() {
 	}
 
 	if len(os.Args) < 3 || os.Args[1] == "-h" || os.Args[1] == "--help" {
-		fmt.Fprintln(os.Stderr, "Usage: remote-token <host> <room> [--name <name>] [--expiry <duration>]")
+		fmt.Fprintln(os.Stderr, "Usage: meet-token <host> <room> [--name <name>] [--expiry <duration>]")
 		fmt.Fprintln(os.Stderr, "")
-		fmt.Fprintln(os.Stderr, "Generates a moderator meeting URL by running meet token on the remote host.")
+		fmt.Fprintln(os.Stderr, "Generate a moderator meeting URL by SSHing to the target host and")
+		fmt.Fprintln(os.Stderr, "running meet token with the host's config and secrets.")
+		fmt.Fprintln(os.Stderr, "")
+		fmt.Fprintln(os.Stderr, "Example:")
+		fmt.Fprintln(os.Stderr, "  meet-token light-hugger workshop-april")
+		fmt.Fprintln(os.Stderr, "  meet-token light-hugger demo --name Tigger --expiry 4h")
+		fmt.Fprintln(os.Stderr, "")
+		fmt.Fprintln(os.Stderr, "The host must have meet deployed with config and secrets at the")
+		fmt.Fprintln(os.Stderr, "standard paths (/srv/meet/repo/config/, /etc/meet/secrets.yaml).")
 		os.Exit(2)
 	}
 

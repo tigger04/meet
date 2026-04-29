@@ -51,6 +51,9 @@ type keys8x8 struct {
 func main() {
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
+		case "serve":
+			runServe(os.Args[2:])
+			return
 		case "token":
 			runToken(os.Args[2:])
 			return
@@ -81,6 +84,18 @@ func printUsage() {
 
 func runServe(args []string) {
 	fs := flag.NewFlagSet("serve", flag.ExitOnError)
+	fs.Usage = func() {
+		fmt.Fprintln(os.Stderr, "Usage: meet [serve] [options]")
+		fmt.Fprintln(os.Stderr, "")
+		fmt.Fprintln(os.Stderr, "Start the meet web server. This is the default command.")
+		fmt.Fprintln(os.Stderr, "")
+		fmt.Fprintln(os.Stderr, "Example:")
+		fmt.Fprintln(os.Stderr, "  meet")
+		fmt.Fprintln(os.Stderr, "  meet serve --config config/defaults.yaml,config/host.yaml,secrets/host.yaml")
+		fmt.Fprintln(os.Stderr, "")
+		fmt.Fprintln(os.Stderr, "Options:")
+		fs.PrintDefaults()
+	}
 	versionFlag := fs.Bool("version", false, "print version and exit")
 	configFlag := fs.String("config", "config/defaults.yaml", "comma-separated config files, merged left-to-right")
 	fs.Parse(args)
@@ -142,6 +157,20 @@ func runServe(args []string) {
 
 func runToken(args []string) {
 	fs := flag.NewFlagSet("token", flag.ExitOnError)
+	fs.Usage = func() {
+		fmt.Fprintln(os.Stderr, "Usage: meet token --room <room-name> [options]")
+		fmt.Fprintln(os.Stderr, "")
+		fmt.Fprintln(os.Stderr, "Generate a moderator JWT URL for a meeting room.")
+		fmt.Fprintln(os.Stderr, "Requires 8x8-keys (app-id, key-id, private-key) in the config.")
+		fmt.Fprintln(os.Stderr, "")
+		fmt.Fprintln(os.Stderr, "Example:")
+		fmt.Fprintln(os.Stderr, "  meet token --room workshop-april")
+		fmt.Fprintln(os.Stderr, "  meet token --room demo --config config/defaults.yaml,config/host.yaml,secrets/host.yaml")
+		fmt.Fprintln(os.Stderr, "  meet token --room demo --name Tigger --expiry 4h")
+		fmt.Fprintln(os.Stderr, "")
+		fmt.Fprintln(os.Stderr, "Options:")
+		fs.PrintDefaults()
+	}
 	configFlag := fs.String("config", "config/defaults.yaml", "comma-separated config files, merged left-to-right")
 	roomFlag := fs.String("room", "", "room name (required)")
 	nameFlag := fs.String("name", "Moderator", "display name in the meeting")
