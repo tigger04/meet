@@ -41,6 +41,7 @@
             justify-content: center;
             padding: 0.5rem 1rem;
             flex-shrink: 0;
+            position: relative;
         }
 
         .banner a {
@@ -59,7 +60,8 @@
         }
 
         .banner-controls {
-            margin-left: auto;
+            position: absolute;
+            right: 1rem;
             display: none;
         }
 
@@ -70,7 +72,7 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
             background: #c0392b;
-            border: none;
+            border: 1px solid #fff;
             color: #fff;
             padding: 0.25rem 0.75rem;
             border-radius: 0.2rem;
@@ -83,11 +85,12 @@
         }
 
         .rec-btn.recording {
-            background: #922b21;
+            background: #7b241c;
+            border-color: transparent;
         }
 
         .rec-btn.recording:hover {
-            background: #a93226;
+            background: #922b21;
         }
 
         #jaas-container {
@@ -136,7 +139,7 @@
                         recBtn.textContent = 'STOP';
                         recBtn.classList.add('recording');
                     } else {
-                        recBtn.textContent = 'REC';
+                        recBtn.textContent = 'RECORD';
                         recBtn.classList.remove('recording');
                     }
                 });
@@ -150,7 +153,7 @@
             <span class="domain-highlight">{{.DomainFirst}}</span><span class="domain-dim">{{.DomainRest}}</span>
         </a>
         <div class="banner-controls">
-            <button id="rec-btn" class="rec-btn">REC</button>
+            <button id="rec-btn" class="rec-btn">RECORD</button>
         </div>
     </div>
     <div id="jaas-container"></div>
