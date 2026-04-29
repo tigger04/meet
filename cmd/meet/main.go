@@ -80,6 +80,8 @@ func printUsage() {
 	fmt.Fprintln(os.Stderr, "  --version       Print version and exit")
 	fmt.Fprintln(os.Stderr, "")
 	fmt.Fprintln(os.Stderr, "Run 'meet <command> -h' for command-specific help.")
+	fmt.Fprintln(os.Stderr, "")
+	fmt.Fprintln(os.Stderr, "See also: meet-token (SSH wrapper for remote token generation)")
 }
 
 func runServe(args []string) {
