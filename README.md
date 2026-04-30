@@ -56,13 +56,15 @@ make release        # tag and push a new version
 
 ## Config
 
-Three-layer config merged left-to-right via `--config`:
+Three-layer config merged left-to-right:
 
 1. `config/defaults.yaml` - universal baseline (committed)
-2. `config/<host>.yaml` - host-specific overrides (committed, no secrets)
-3. `secrets/<host>.yaml.age` - secrets (age-encrypted, committed)
+2. `config/<host>.yaml` via `CONFIG_PATH` env var - host-specific overrides
+3. `secrets/<host>.yaml` via `SECRETS_PATH` env var - secrets (age-encrypted for deploy)
 
-For local dev, `secrets/localhost.yaml` (unencrypted, gitignored) is acceptable.
+The app reads `CONFIG_PATH` and `SECRETS_PATH` environment variables automatically.
+The `--config` flag is still supported for explicit override. For local dev,
+`secrets/localhost.yaml` (unencrypted, gitignored) is acceptable.
 
 ### Config fields
 

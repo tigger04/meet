@@ -100,7 +100,7 @@ func runServe(args []string) {
 		fs.PrintDefaults()
 	}
 	versionFlag := fs.Bool("version", false, "print version and exit")
-	configFlag := fs.String("config", "config/defaults.yaml", "comma-separated config files, merged left-to-right")
+	configFlag := fs.String("config", "", "comma-separated config files (default: auto from env)")
 	fs.Parse(args)
 
 	if *versionFlag {
@@ -109,7 +109,12 @@ func runServe(args []string) {
 	}
 
 	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
-	cfg := loadConfig(*configFlag, logger)
+
+	configPaths := *configFlag
+	if configPaths == "" {
+		configPaths = buildConfigPaths()
+	}
+	cfg := loadConfig(configPaths, logger)
 
 	if cfg.Keys8x8.AppID == "" {
 		logger.Error("app-id not configured — add it to a secrets YAML file")
@@ -190,7 +195,7 @@ func runToken(args []string) {
 		fmt.Fprintln(os.Stderr, "Options:")
 		fs.PrintDefaults()
 	}
-	configFlag := fs.String("config", "config/defaults.yaml", "comma-separated config files, merged left-to-right")
+	configFlag := fs.String("config", "", "comma-separated config files (default: auto from env)")
 	roomFlag := fs.String("room", "", "room name (required)")
 	nameFlag := fs.String("name", "", "display name in the meeting (default from config or \"Moderator\")")
 	expiryFlag := fs.Duration("expiry", 2*time.Hour, "token validity duration")
@@ -202,7 +207,12 @@ func runToken(args []string) {
 	}
 
 	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
-	cfg := loadConfig(*configFlag, logger)
+
+	configPaths := *configFlag
+	if configPaths == "" {
+		configPaths = buildConfigPaths()
+	}
+	cfg := loadConfig(configPaths, logger)
 
 	// Resolve display name: CLI flag > config > fallback
 	displayName := *nameFlag
@@ -277,6 +287,22 @@ func parsePrivateKey(pemStr string) *rsa.PrivateKey {
 		os.Exit(1)
 	}
 	return rsaKey
+}
+
+// buildConfigPaths builds the config file chain from environment
+// variables, following the same convention as writeback and golink.
+// Load order: defaults -> host config -> secrets (each overrides the previous).
+func buildConfigPaths() string {
+	paths := []string{"config/defaults.yaml"}
+
+	if cp := os.Getenv("CONFIG_PATH"); cp != "" {
+		paths = append(paths, cp)
+	}
+	if sp := os.Getenv("SECRETS_PATH"); sp != "" {
+		paths = append(paths, sp)
+	}
+
+	return strings.Join(paths, ",")
 }
 
 func loadConfig(paths string, logger *slog.Logger) appConfig {

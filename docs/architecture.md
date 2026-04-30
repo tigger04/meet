@@ -1,4 +1,4 @@
-<!-- Version: 0.2 | Last updated: 2026-04-30 -->
+<!-- Version: 0.3 | Last updated: 2026-04-30 -->
 
 # Architecture
 
@@ -74,11 +74,14 @@ assets (HTML template, font) and requires no external runtime dependencies.
 
 ## Config layers
 
-Config is merged left-to-right via `--config`:
+Config is merged left-to-right from three sources:
 
-1. `config/defaults.yaml` - committed, universal baseline
-2. `config/<host>.yaml` - committed, host-specific (addr, base_url)
-3. `secrets/<host>.yaml` - age-encrypted, host-specific (keys, credentials)
+1. `config/defaults.yaml` - always loaded, committed, universal baseline
+2. `CONFIG_PATH` env var - host-specific overrides (addr, base_url)
+3. `SECRETS_PATH` env var - age-encrypted secrets (keys, credentials)
+
+The `--config` flag overrides this when passed explicitly. This convention
+is shared with writeback and golink.
 
 Later files override earlier ones. YAML unmarshalling is additive - fields
 not present in a later file retain their earlier values.

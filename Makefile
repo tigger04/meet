@@ -6,7 +6,8 @@
 APP          := meet
 MAIN_PKG     := ./cmd/meet
 BUILD_OUTPUT := ./bin/$(APP)
-CONFIG       := config/defaults.yaml,config/localhost.yaml,secrets/localhost.yaml
+CONFIG_PATH  := config/localhost.yaml
+SECRETS_PATH := secrets/localhost.yaml
 
 .PHONY: build test test-one-off lint clean install uninstall init serve sync release
 
@@ -48,10 +49,10 @@ uninstall:
 	rm -f $(HOME)/.local/bin/meet-token
 
 serve: build
-	$(BUILD_OUTPUT) --config $(CONFIG)
+	CONFIG_PATH=$(CONFIG_PATH) SECRETS_PATH=$(SECRETS_PATH) $(BUILD_OUTPUT)
 
 token: build
-	$(BUILD_OUTPUT) token --config $(CONFIG) --room $(ROOM)
+	CONFIG_PATH=$(CONFIG_PATH) SECRETS_PATH=$(SECRETS_PATH) $(BUILD_OUTPUT) token --room $(ROOM)
 
 init:
 	@if [ ! -f config/localhost.yaml ]; then \
