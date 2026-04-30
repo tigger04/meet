@@ -1,0 +1,7 @@
+# Per-host config overrides. Copy to config/<hostname>.yaml and customise.
+# This file is committed to the repo. It must not contain secrets.
+addr: "127.0.0.1:18085"
+base_url: "https://meet.example.com"
+default-moderator-name: "Admin"
+recording:
+  webdav-path: "meeting-recordings"

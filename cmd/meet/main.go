@@ -185,7 +185,7 @@ func runToken(args []string) {
 		fmt.Fprintln(os.Stderr, "Example:")
 		fmt.Fprintln(os.Stderr, "  meet token --room workshop-april")
 		fmt.Fprintln(os.Stderr, "  meet token --room demo --config config/defaults.yaml,config/host.yaml,secrets/host.yaml")
-		fmt.Fprintln(os.Stderr, "  meet token --room demo --name Tigger --expiry 4h")
+		fmt.Fprintln(os.Stderr, "  meet token --room demo --name Admin --expiry 4h")
 		fmt.Fprintln(os.Stderr, "")
 		fmt.Fprintln(os.Stderr, "Options:")
 		fs.PrintDefaults()

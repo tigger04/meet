@@ -4,7 +4,7 @@ Branded 8x8 JaaS (Jitsi as a Service) meeting page. A lightweight Go web app
 that serves video meeting rooms with a branded banner, moderator JWT support,
 and automatic recording/transcription archival to Nextcloud.
 
-Visitors go to `meet.lobb.ie/workshop-april` and join a room. The moderator
+Visitors go to `meet.example.com/workshop-april` and join a room. The moderator
 generates a signed JWT URL via the CLI to get admin privileges and can start
 recording from the banner. Recordings, transcriptions, and chat logs are
 automatically downloaded and uploaded to a Nextcloud WebDAV share.
@@ -131,8 +131,8 @@ switch back to speaker view if preferred.
 | `internal/server/static/index.html` | Meeting page template (embedded) |
 | `internal/server/static/SpecialElite-Regular.woff2` | Banner font (embedded) |
 | `config/defaults.yaml` | Default config |
-| `config/<host>.yaml` | Per-host config overrides |
-| `secrets/<host>.yaml.age` | Per-host secrets (age-encrypted) |
+| `config/<host>.yaml` | Per-host config overrides (see `config/example-host.yaml.example`) |
+| `secrets/<host>.yaml.age` | Per-host secrets (see `secrets/example-host.yaml.example`) |
 | `docs/8x8-embed.md` | 8x8 JaaS embed API reference |
 
 ## Deployment

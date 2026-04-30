@@ -152,8 +152,8 @@ func (s *Server) handleRoom(w http.ResponseWriter, r *http.Request) {
 }
 
 // parseDomain extracts the domain from a URL and splits it into the first
-// label (bright) and the rest (dim). E.g. "https://meet.lobb.ie" yields
-// ("meet.lobb.ie", "meet", ".lobb.ie").
+// label (bright) and the rest (dim). E.g. "https://meet.example.com" yields
+// ("meet.example.com", "meet", ".example.com").
 func parseDomain(baseURL string) (full, first, rest string) {
 	u, err := url.Parse(baseURL)
 	if err != nil {
