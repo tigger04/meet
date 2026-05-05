@@ -1,4 +1,4 @@
-module github.com/tigger04/meet
+module github.com/tadg-paul/meet
 
 go 1.25.8
 

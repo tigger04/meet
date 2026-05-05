@@ -12,7 +12,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tigger04/meet/internal/server"
+	"github.com/tadg-paul/meet/internal/server"
 )
 
 func newTestServer() *httptest.Server {

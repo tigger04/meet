@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tigger04/meet/internal/server"
+	"github.com/tadg-paul/meet/internal/server"
 )
 
 const testWebhookToken = "test-bearer-token"
