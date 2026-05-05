@@ -116,6 +116,13 @@ func runServe(args []string) {
 	}
 	cfg := loadConfig(configPaths, logger)
 
+	// ADDR env var takes precedence over addr in config YAML.
+	// Nix hosts allocate a port at deploy time via ADDR; Ubuntu hosts
+	// set addr in config YAML. During the transition both must work.
+	if envAddr := os.Getenv("ADDR"); envAddr != "" {
+		cfg.Addr = envAddr
+	}
+
 	if cfg.Keys8x8.AppID == "" {
 		logger.Error("app-id not configured — add it to a secrets YAML file")
 		os.Exit(1)
