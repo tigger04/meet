@@ -1,1 +1,7 @@
-addr: "127.0.0.1:18082"
+addr: "127.0.0.1:18015"
+
+default-moderator-name: "Tadg"
+
+recording:
+  webdav:
+    path: meeting-recordings

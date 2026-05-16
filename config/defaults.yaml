@@ -1,7 +1,12 @@
 addr: 127.0.0.1:18085
 base_url: http://localhost:18085
-default_room: lobby
+exec_args: serve
+
+default-moderator-name: Modymoody
+
 recording:
     webdav-path: meeting-recordings
-default-moderator-name: Super User
-exec_args: serve
+    player-base-url: "https://media.lobb.ie/"
+    local-retention-days: 14
+    cloudflare:
+       stream-ttl-days: 90
